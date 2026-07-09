@@ -1,0 +1,49 @@
+{% extends "base.html" %} {% block title %}Beranda{% endblock %} {% block isi %}
+<section class="pahlawan">
+  <h1>Nusantara Cinema</h1>
+  <p>
+    Pesan tiket bioskop dengan mudah di cabang <strong>Jakarta</strong>,
+    <strong>Makassar</strong>, atau <strong>Surabaya</strong>. Pilih cabang
+    terdekat, tentukan kursi favoritmu, dan bayar langsung dengan dompet
+    digital.
+  </p>
+</section>
+
+<section class="kartu-grid" id="grid-cabang">
+  {% for n in nodes %}
+  <div class="kartu node" data-kunci="{{ n.kunci }}">
+    <div class="node-judul">
+      <span class="titik hijau"></span>
+      <h3>Cabang {{ n.nama }}</h3>
+    </div>
+    <p class="film">🎞 {{ n.film }}</p>
+    <p class="film">🕢 Jadwal tayang: {{ n.jadwal }} WIB</p>
+    <p class="harga">
+      <span class="label-harga">Rp{{ "{:,}".format(n.harga) }}</span>
+      <small class="redup">/kursi</small>
+    </p>
+    <p class="kursi-info">
+      💺 Tersisa <span class="label-kosong">{{ n.kursi_kosong }}</span> dari {{
+      n.total_kursi }} kursi
+    </p>
+    <a class="btn besar tengah" href="/pesan/{{ n.kunci }}">Pesan Tiket</a>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %} {% block skrip %}
+<script>
+  // Harga & ketersediaan kursi diperbarui otomatis dari server
+  async function refresh() {
+    const r = await fetch("/api/nodes");
+    const nodes = await r.json();
+    nodes.forEach((n) => {
+      const kartu = document.querySelector(`[data-kunci="${n.kunci}"]`);
+      if (!kartu) return;
+      kartu.querySelector(".label-harga").textContent =
+        "Rp" + n.harga.toLocaleString("id");
+      kartu.querySelector(".label-kosong").textContent = n.kursi_kosong;
+    });
+  }
+  setInterval(refresh, 2000);
+</script>
+{% endblock %}

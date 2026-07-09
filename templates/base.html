@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}Nusantara Cinema{% endblock %} · Nusantara Cinema
+    </title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        🎬 <strong>Nusantara Cinema</strong>
+        <span>· Jaringan Bioskop Nusantara</span>
+      </div>
+      <nav>
+        <a href="/" class="{% if request.path == '/' %}aktif{% endif %}"
+          >Beranda</a
+        >
+        <a
+          href="/admin"
+          class="{% if request.path == '/admin' %}aktif{% endif %}"
+          >Admin</a
+        >
+      </nav>
+    </header>
+
+    <main class="wadah">{% block isi %}{% endblock %}</main>
+
+    <footer class="kaki">
+      Nusantara Cinema · Cabang Jakarta · Makassar · Surabaya
+    </footer>
+
+    {% block skrip %}{% endblock %}
+  </body>
+</html>
