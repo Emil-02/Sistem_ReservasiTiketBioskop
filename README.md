@@ -58,8 +58,8 @@ Sistem_ReservasiTikketBioskop/
 ### 1. Clone repository
 
 ```bash
-git clone https://github.com/USERNAME/Sistem_ReservasiTikketBioskop.git
-cd Sistem_ReservasiTikketBioskop
+git clone https://github.com/Emil-02/Sistem_ReservasiTiketBioskop.git
+cd Sistem_ReservasiTiketBioskop
 ```
 
 ### 2. (Opsional) Buat virtual environment
