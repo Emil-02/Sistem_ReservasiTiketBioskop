@@ -7,13 +7,24 @@ ke cabang, dan setiap pemesanan diproses sebagai transaksi
 terdistribusi (Two-Phase Commit) yang melibatkan layanan
 pembayaran, kursi, dan penerbitan tiket.
 
-Jalankan:  python app.py  lalu buka http://127.0.0.1:5001
+Jalankan: python app.py (browser server akan terbuka otomatis)
 """
-from flask import Flask, jsonify, render_template, request
+import threading
+import webbrowser
+
+from flask import Flask, abort, jsonify, render_template, request
 
 from modules import bioskop, replikasi, transaksi_2pc
-
 app = Flask(__name__)
+def akses_dari_server():
+    """Admin hanya boleh diakses langsung dari komputer server."""
+    return request.remote_addr in {"127.0.0.1", "::1"}
+
+
+@app.context_processor
+def status_akses():
+    """Dipakai template untuk menyembunyikan navigasi admin dari client."""
+    return {"boleh_admin": akses_dari_server()}
 
 
 def snapshot_nodes(ambil_log=False):
@@ -35,7 +46,6 @@ def snapshot_nodes(ambil_log=False):
         hasil.append(data)
     return hasil
 
-
 # ============================== HALAMAN ==============================
 
 @app.route("/")
@@ -52,6 +62,8 @@ def halaman_pesan(cabang):
 
 @app.route("/admin")
 def halaman_admin():
+    if not akses_dari_server():
+        abort(403)
     return render_template("admin.html", saldo=transaksi_2pc.DOMPET["saldo"])
 
 
@@ -96,6 +108,8 @@ def api_booking():
 
 @app.route("/api/admin/harga", methods=["POST"])
 def api_admin_harga():
+    if not akses_dari_server():
+        abort(403)
     data = request.json
     try:
         harga = int(data.get("harga", 0))
@@ -113,12 +127,16 @@ def api_admin_harga():
 
 @app.route("/api/admin/saldo", methods=["POST"])
 def api_admin_saldo():
+    if not akses_dari_server():
+        abort(403)
     transaksi_2pc.atur_saldo(request.json.get("saldo"))
     return jsonify({"saldo": transaksi_2pc.DOMPET["saldo"]})
 
 
 @app.route("/api/admin/reset", methods=["POST"])
 def api_admin_reset():
+    if not akses_dari_server():
+        abort(403)
     bioskop.reset_semua()
     replikasi.REPLICATION_LOG.clear()
     transaksi_2pc.DOMPET["saldo"] = 200000
@@ -128,6 +146,8 @@ def api_admin_reset():
 
 @app.route("/api/admin/monitor")
 def api_admin_monitor():
+    if not akses_dari_server():
+        abort(403)
     return jsonify({
         "nodes": snapshot_nodes(ambil_log=True),
         "replication_log": replikasi.REPLICATION_LOG,
@@ -137,8 +157,13 @@ def api_admin_monitor():
 
 
 if __name__ == "__main__":
+    server_url = "http://127.0.0.1:5001/admin"
     print("=" * 60)
     print("  NUSANTARA CINEMA - Reservasi Tiket Bioskop")
-    print("  Buka browser: http://127.0.0.1:5001")
+    print(f"  Membuka browser: {server_url}")
     print("=" * 60)
-    app.run(debug=True, port=5001)
+
+    # Beri Flask waktu untuk mulai sebelum halaman dibuka. Reloader dimatikan
+    # agar browser tidak terbuka dua kali saat menjalankan mode debug.
+    threading.Timer(1.0, lambda: webbrowser.open(server_url)).start()
+    app.run(debug=True, use_reloader=False, host="0.0.0.0", port=5001)
