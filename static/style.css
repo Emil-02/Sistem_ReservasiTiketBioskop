@@ -194,6 +194,10 @@ h3 small {
 .titik.kuning {
   background: var(--kuning);
 }
+.titik.merah {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
 .lencana {
   margin-left: auto;
   font-size: 0.7rem;

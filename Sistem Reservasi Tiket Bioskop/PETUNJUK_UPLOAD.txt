@@ -1,0 +1,13 @@
+FOLDER INI SIAP DIUNGGAH KE GOOGLE DRIVE
+
+Isi folder ini sudah mencakup kode aplikasi, template, CSS, pengujian,
+requirements.txt, README.md, dan contoh konfigurasi yang aman.
+
+Setelah diunduh pada setiap laptop:
+1. Salin network_config.example.json menjadi network_config.json.
+2. Isi IP ketiga laptop dan gunakan secret yang sama.
+3. Install dependensi: pip install -r requirements.txt
+4. Jalankan node sesuai laptop masing-masing.
+
+Jangan menambahkan network_config.json aktual ke folder upload.
+

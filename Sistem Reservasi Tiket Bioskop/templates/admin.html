@@ -1,0 +1,149 @@
+{% extends "base.html" %} {% block title %}Panel Admin{% endblock %} {% block
+isi %}
+<h1>Panel Admin</h1>
+<p class="pengantar">
+  Kelola harga tiket, saldo pelanggan, dan pantau kondisi server seluruh cabang.
+</p>
+
+<div class="kartu-grid dua">
+  <div class="kartu">
+    <h3>Ubah Harga Tiket</h3>
+    <p class="redup">
+      Harga diubah di server pusat Jakarta lalu disebarkan otomatis ke seluruh
+      cabang.
+    </p>
+    <div class="form-kolom">
+      <label
+        >Harga baru: Rp
+        <input
+          type="number"
+          id="harga"
+          value="{{ harga }}"
+          step="5000"
+          min="1000"
+          max="1000000"
+      /></label>
+      <label
+        >Metode penyebaran
+        <select id="mode">
+          <option value="sync">Serentak — semua cabang langsung berubah</option>
+          <option value="async">
+            Bertahap — cabang mengikuti sesuai koneksi
+          </option>
+        </select>
+      </label>
+    </div>
+    <button class="btn" onclick="ubahHarga()">Simpan Harga</button>
+    <div id="info-harga"></div>
+  </div>
+
+  <div class="kartu">
+    <h3>Saldo Dompet Pelanggan</h3>
+    <div class="form-kolom">
+      <label
+        >Atur saldo: Rp
+        <input
+          type="number"
+          id="saldo"
+          value="{{ saldo }}"
+          step="10000"
+          min="0"
+      /></label>
+    </div>
+    <div class="tombol-baris">
+      <button class="btn" onclick="aturSaldo()">Simpan Saldo</button>
+      <button class="btn bahaya" onclick="resetData()">
+        ↺ Reset Semua Data
+      </button>
+    </div>
+    <div id="info-saldo"></div>
+  </div>
+</div>
+
+<h3 class="sub">Status Server Cabang</h3>
+<div class="kartu-grid" id="grid-node"></div>
+
+<div class="kartu-grid dua">
+  <div class="kartu">
+    <h3>Log Sinkronisasi Data</h3>
+    <div class="log" id="replog"><div>— belum ada aktivitas —</div></div>
+  </div>
+  <div class="kartu">
+    <h3>Riwayat Transaksi</h3>
+    <div class="log" id="riwayat"><div>— belum ada transaksi —</div></div>
+  </div>
+</div>
+{% endblock %} {% block skrip %}
+<script>
+  async function ubahHarga() {
+    const r = await fetch("/api/admin/harga", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        harga: document.getElementById("harga").value,
+        mode: document.getElementById("mode").value,
+      }),
+    });
+    const d = await r.json();
+    if (d.error) {
+      alert(d.error);
+      return;
+    }
+    document.getElementById("info-harga").innerHTML =
+      '<div class="status sukses">Harga tersimpan</div><div class="log">' +
+      d.langkah.map((l) => `<div>› ${l}</div>`).join("") +
+      "</div>";
+    monitor();
+  }
+  async function aturSaldo() {
+    const r = await fetch("/api/admin/saldo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ saldo: document.getElementById("saldo").value }),
+    });
+    const d = await r.json();
+    document.getElementById("info-saldo").innerHTML =
+      `<div class="status sukses">Saldo pelanggan sekarang Rp${d.saldo.toLocaleString("id")}</div>`;
+  }
+  async function resetData() {
+    if (!confirm("Reset semua data (kursi, harga, saldo, riwayat)?")) return;
+    await fetch("/api/admin/reset", { method: "POST" });
+    location.reload();
+  }
+  async function monitor() {
+    const r = await fetch("/api/admin/monitor");
+    const d = await r.json();
+
+    document.getElementById("grid-node").innerHTML = d.nodes
+      .map((n) => {
+        const beda = d.nodes.some((m) => m.harga !== n.harga);
+        return `<div class="kartu node ${beda ? "beda" : ""}">
+            <div class="node-judul"><span class="titik ${beda ? "kuning" : "hijau"}"></span>
+                <h3>Server ${n.nama}</h3>
+                <span class="lencana ${n.role === "Master" ? "master" : ""}">${n.role === "Master" ? "Pusat" : "Cabang"}</span></div>
+            <p class="harga">Rp${n.harga.toLocaleString("id")}</p>
+            <p class="kursi-info">💺 ${n.kursi_kosong}/${n.total_kursi} kursi kosong</p>
+            <div class="log kecil">${(n.log || []).map((l) => `<div>[${l.waktu}] ${l.pesan}</div>`).join("") || "<div>— log kosong —</div>"}</div>
+        </div>`;
+      })
+      .join("");
+
+    document.getElementById("replog").innerHTML = d.replication_log.length
+      ? d.replication_log
+          .map((e) => `<div>[${e.waktu}] ${e.operasi}</div>`)
+          .join("")
+      : "<div>— belum ada aktivitas —</div>";
+
+    document.getElementById("riwayat").innerHTML = d.riwayat.length
+      ? d.riwayat
+          .map(
+            (t) =>
+              `<div>[${t.waktu}] <strong class="${t.keputusan === "COMMIT" ? "teks-hijau" : "teks-merah"}">${t.keputusan === "COMMIT" ? "BERHASIL" : "DIBATALKAN"}</strong> · ${t.ringkas}</div>`,
+          )
+          .join("")
+      : "<div>— belum ada transaksi —</div>";
+  }
+  monitor();
+  setInterval(monitor, 1000);
+</script>
+{% endblock %}

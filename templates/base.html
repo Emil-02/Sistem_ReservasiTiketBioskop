@@ -21,11 +21,13 @@
         <a href="/" class="{% if request.path == '/' %}aktif{% endif %}"
           >Beranda</a
         >
-        <a
-          href="/admin"
-          class="{% if request.path == '/admin' %}aktif{% endif %}"
-          >Admin</a
-        >
+        {% if boleh_admin %}
+          <a
+            href="/admin"
+            class="{% if request.path == '/admin' %}aktif{% endif %}"
+            >Admin</a
+          >
+        {% endif %}
       </nav>
     </header>
 

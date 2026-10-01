@@ -1,0 +1,8 @@
+{
+  "secret": "ganti-dengan-secret-yang-sama-di-semua-laptop",
+  "nodes": {
+    "jakarta": "http://IP_LAPTOP_PUSAT:5001",
+    "makassar": "http://IP_LAPTOP_MAKASSAR:5001",
+    "surabaya": "http://IP_LAPTOP_SURABAYA:5001"
+  }
+}

@@ -1,0 +1,128 @@
+{% extends "base.html" %} {% block title %}Pesan Tiket · {{ node.nama }}{%
+endblock %} {% block isi %}
+<h1>Pesan Tiket · Cabang {{ node.nama }}</h1>
+<p class="pengantar">🎞 {{ node.film }} · 🕢 {{ node.jadwal }} WIB</p>
+
+<div class="kartu-grid dua">
+  <div class="kartu">
+    <h3>Pilih Kursi</h3>
+    <p class="redup">
+      Klik kursi yang diinginkan (maksimal 6). Harga per kursi:
+      <strong id="label-harga">…</strong>
+    </p>
+    <div class="layar">LAYAR</div>
+    <div id="denah" class="denah"></div>
+    <div class="legenda">
+      <span><i class="kotak kosong"></i> Tersedia</span>
+      <span><i class="kotak dipilih"></i> Pilihanmu</span>
+      <span><i class="kotak terisi"></i> Terisi</span>
+    </div>
+  </div>
+
+  <div class="kartu">
+    <h3>Data Pemesanan</h3>
+    <div class="form-kolom">
+      <label
+        >Nama pemesan
+        <input type="text" id="nama" placeholder="Masukkan nama" maxlength="30"
+      /></label>
+      <p class="angka">Saldo dompet: <strong id="label-saldo">…</strong></p>
+      <p class="angka">Kursi dipilih: <strong id="terpilih">—</strong></p>
+      <p class="angka">Total bayar: <strong id="total">Rp0</strong></p>
+    </div>
+    <button class="btn besar" onclick="bayar()">
+      💳 Bayar &amp; Pesan Sekarang
+    </button>
+    <div id="hasil"></div>
+    <a class="tautan-kembali" href="/">← Kembali ke daftar cabang</a>
+  </div>
+</div>
+{% endblock %} {% block skrip %}
+<script>
+  const CABANG = "{{ kunci }}";
+  let harga = 0;
+  let dipilih = new Set();
+
+  function ringkas() {
+    document.getElementById("terpilih").textContent = dipilih.size
+      ? [...dipilih].sort().join(", ")
+      : "—";
+    document.getElementById("total").textContent =
+      "Rp" + (dipilih.size * harga).toLocaleString("id");
+  }
+  function gambarDenah(kursi) {
+    const wadah = document.getElementById("denah");
+    wadah.innerHTML = "";
+    Object.entries(kursi).forEach(([kode, pemilik]) => {
+      const el = document.createElement("div");
+      el.className =
+        "kursi " +
+        (pemilik ? "terisi" : dipilih.has(kode) ? "dipilih" : "kosong");
+      el.textContent = kode;
+      if (!pemilik)
+        el.onclick = () => {
+          if (dipilih.has(kode)) dipilih.delete(kode);
+          else if (dipilih.size < 6) dipilih.add(kode);
+          el.className = "kursi " + (dipilih.has(kode) ? "dipilih" : "kosong");
+          ringkas();
+        };
+      wadah.appendChild(el);
+    });
+    ringkas();
+  }
+  async function muat() {
+    const r = await fetch("/api/denah/" + CABANG);
+    const d = await r.json();
+    harga = d.harga;
+    document.getElementById("label-harga").textContent =
+      "Rp" + d.harga.toLocaleString("id");
+    document.getElementById("label-saldo").textContent =
+      "Rp" + d.saldo.toLocaleString("id");
+    gambarDenah(d.kursi);
+  }
+  async function bayar() {
+    const nama = document.getElementById("nama").value.trim();
+    if (!nama) {
+      alert("Nama pemesan wajib diisi.");
+      return;
+    }
+    if (!dipilih.size) {
+      alert("Pilih minimal satu kursi.");
+      return;
+    }
+
+    const r = await fetch("/api/booking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cabang: CABANG, nama, kursi: [...dipilih] }),
+    });
+    const d = await r.json();
+    if (d.error) {
+      alert(d.error);
+      return;
+    }
+
+    const hasil = document.getElementById("hasil");
+    if (d.sukses) {
+      hasil.innerHTML = `
+            <div class="tiket">
+                <div class="tiket-kepala">✅ Pembayaran Berhasil</div>
+                <div class="tiket-badan">
+                    <p><strong>${d.tiket}</strong></p>
+                    <p>${d.nama} · Cabang ${d.cabang}</p>
+                    <p>Kursi ${d.kursi.join(", ")} · Rp${d.total.toLocaleString("id")}</p>
+                    <p class="redup">Sisa saldo: Rp${d.saldo_akhir.toLocaleString("id")}</p>
+                </div>
+            </div>`;
+    } else {
+      hasil.innerHTML = `
+            <div class="status gagal">❌ Pemesanan gagal</div>
+            <p class="angka">${d.alasan || "Transaksi dibatalkan, tidak ada saldo yang terpotong."}</p>`;
+    }
+    dipilih.clear();
+    muat();
+  }
+  muat();
+  setInterval(muat, 3000); // denah & harga selalu mengikuti data server terbaru
+</script>
+{% endblock %}

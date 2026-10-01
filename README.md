@@ -124,3 +124,42 @@ http://127.0.0.1:5001
 ## 📄 Lisensi
 
 Proyek ini dibuat untuk keperluan tugas mata kuliah **Sistem Terdistribusi**.
+
+## Menjalankan pada 3 Laptop (Mode Terdistribusi Nyata)
+
+Ketiga laptop harus berada pada Wi-Fi/hotspot yang sama dan masing-masing
+menjalankan salinan folder proyek ini. Jakarta bertindak sebagai server pusat,
+sedangkan Makassar dan Surabaya menjadi server cabang.
+
+1. Cari IPv4 setiap laptop dengan `ipconfig`.
+2. Salin `network_config.example.json` menjadi `network_config.json` pada
+   ketiga laptop.
+3. Isi alamat IP ketiga laptop dan gunakan nilai `secret` yang sama persis.
+4. Izinkan Python/port 5001 pada Windows Firewall ketika diminta.
+5. Jalankan perintah berikut pada laptop yang sesuai:
+
+```powershell
+# Laptop pusat
+python app.py --node jakarta --port 5001
+
+# Laptop cabang Makassar
+python app.py --node makassar --port 5001
+
+# Laptop cabang Surabaya
+python app.py --node surabaya --port 5001
+```
+
+Pengguna membuka alamat laptop pusat, misalnya
+`http://192.168.1.10:5001`. Pemesanan Makassar dan Surabaya akan diteruskan
+melalui HTTP ke server cabang pemilik kursi. Panel admin hanya tersedia secara
+lokal pada laptop pusat melalui `http://127.0.0.1:5001/admin`.
+
+Untuk memeriksa koneksi dari laptop pusat:
+
+```powershell
+Test-NetConnection 192.168.1.11 -Port 5001
+Test-NetConnection 192.168.1.12 -Port 5001
+```
+
+Tanpa argumen `--node`, aplikasi tetap berjalan dalam mode simulasi satu laptop
+seperti versi sebelumnya.

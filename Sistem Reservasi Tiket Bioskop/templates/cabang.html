@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Server Cabang {{ node.nama }}{% endblock %}
+{% block isi %}
+<h1>Server Cabang {{ node.nama }}</h1>
+<p class="pengantar">
+  Dashboard node lokal. Harga dan data operasional diterima dari server pusat Jakarta.
+</p>
+
+<h3 class="sub">Status Server Cabang</h3>
+<div class="kartu-grid">
+  <div class="kartu node" id="status-node">
+    <div class="node-judul">
+      <span class="titik hijau"></span>
+      <h3>Server {{ node.nama }}</h3>
+      <span class="lencana">Cabang</span>
+    </div>
+    <p class="film">{{ node.film }}</p>
+    <p class="film">Jadwal tayang: {{ node.jadwal }} WIB</p>
+    <p class="harga" id="harga-node">Rp{{ "{:,}".format(node.harga) }}</p>
+    <p class="kursi-info">
+      <span id="kursi-kosong">{{ node.kursi_kosong }}</span>/{{ node.total_kursi }} kursi kosong
+    </p>
+    <div class="log kecil" id="log-node">
+      {% for item in node.log %}
+      <div>[{{ item.waktu }}] {{ item.pesan }}</div>
+      {% else %}
+      <div>— log kosong —</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="kartu">
+  <h3>Informasi Node</h3>
+  <p class="angka">Identitas node: <strong>{{ node_id }}</strong></p>
+  <p class="angka">Peran: <strong>Server cabang</strong></p>
+  <p class="redup">
+    Pemesanan untuk cabang {{ node.nama }} diproses oleh node ini ketika dikirim dari server pusat.
+  </p>
+</div>
+{% endblock %}
+
+{% block skrip %}
+<script>
+  async function monitorCabang() {
+    const response = await fetch("/api/cabang/monitor");
+    const node = await response.json();
+    if (node.error) return;
+    document.getElementById("harga-node").textContent =
+      "Rp" + node.harga.toLocaleString("id");
+    document.getElementById("kursi-kosong").textContent = node.kursi_kosong;
+    document.getElementById("log-node").innerHTML = node.log.length
+      ? node.log.map((item) => `<div>[${item.waktu}] ${item.pesan}</div>`).join("")
+      : "<div>— log kosong —</div>";
+  }
+  setInterval(monitorCabang, 1500);
+</script>
+{% endblock %}
